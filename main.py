@@ -1,41 +1,60 @@
 import pygame
 from game.game_engine import GameEngine
 
-# Initialize pygame/Start application
-pygame.init()
-
-# Screen dimensions
+# Screen dimensions and colors
 WIDTH, HEIGHT = 800, 600
-SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Ping Pong - Pygame Version")
-
-# Colors
-WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-
-# Clock
-clock = pygame.time.Clock()
 FPS = 60
 
-# Game loop
-engine = GameEngine(WIDTH, HEIGHT)
-
 def main():
+    # Initialize pygame and subsystems
+    pygame.init()
+    try:
+        pygame.mixer.init()
+    except Exception:
+        # If mixer fails to init (no audio device), continue without sound
+        pass
+    pygame.font.init()
+
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption("Ping Pong - Interactive")
+
+    clock = pygame.time.Clock()
+
+    # Create engine after pygame init
+    engine = GameEngine(WIDTH, HEIGHT)
+
     running = True
-    while running:
-        SCREEN.fill(BLACK)
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
+    try:
+        while running:
+            # Cap framerate and get elapsed ms (dt)
+            dt = clock.tick(FPS)
 
-        engine.handle_input()
-        engine.update()
-        engine.render(SCREEN)
+            # Event handling (quit, restart)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                elif event.type == pygame.KEYDOWN:
+                    # ESC to quit
+                    if event.key == pygame.K_ESCAPE:
+                        running = False
+                    # R to restart match when game over (also works while playing to reset)
+                    elif event.key == pygame.K_r:
+                        engine.reset_match()
+                # Give engine a chance to react to lower-level events if needed
+                engine.handle_event(event)
 
-        pygame.display.flip()
-        clock.tick(FPS)
+            # Per-frame input handling (continuous)
+            engine.handle_input()
 
-    pygame.quit()
+            # Game update/render
+            engine.update()
+            screen.fill(BLACK)
+            engine.render(screen)
+
+            pygame.display.flip()
+    finally:
+        pygame.quit()
 
 if __name__ == "__main__":
     main()
