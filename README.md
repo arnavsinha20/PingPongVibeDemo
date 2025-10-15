@@ -135,5 +135,3 @@ pygame-pingpong/
 - [] README is followed during setup and testing
 - [] Codebase is clean, modular, and understandable
 - [] Submission should include the Chat/LLM used Page link with the complete chat history.
-=======
-
