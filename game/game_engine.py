@@ -26,7 +26,7 @@ def make_beep(freq=440, duration_ms=100, volume=0.2):
     return sound
 
 class GameEngine:
-    def __init__(self, width: int, height: int, winning_score: int = 5):
+    def __init__(self, width: int, height: int, winning_score: int = 3):
         self.width = width
         self.height = height
         self.paddle_width = 10
@@ -44,6 +44,7 @@ class GameEngine:
         self.winning_score = winning_score
 
         self.game_over = False
+        self.awaiting_replay_choice = False
 
         self.keys_down = set()
 
@@ -59,6 +60,17 @@ class GameEngine:
 
     def handle_event(self, event: pygame.event.Event):
         if event.type == pygame.KEYDOWN:
+            # Handle replay choices when game is over
+            if self.awaiting_replay_choice:
+                if event.key == pygame.K_3:
+                    self.start_new_match(3)
+                elif event.key == pygame.K_5:
+                    self.start_new_match(5)
+                elif event.key == pygame.K_7:
+                    self.start_new_match(7)
+                return
+            
+            # Normal gameplay controls
             if event.key == pygame.K_w:
                 self.player.set_move_up(True)
             elif event.key == pygame.K_s:
@@ -103,6 +115,7 @@ class GameEngine:
         if scored:
             if self.player_score >= self.winning_score or self.ai_score >= self.winning_score:
                 self.game_over = True
+                self.awaiting_replay_choice = True
 
         if not self.game_over:
             self.ai.auto_track(self.ball, self.height)
@@ -128,21 +141,70 @@ class GameEngine:
 
         if self.game_over:
             overlay_font = pygame.font.SysFont("Arial", 36)
+            small_font = pygame.font.SysFont("Arial", 24)
+            
             if self.player_score > self.ai_score:
-                msg = "Player Wins! Press R to Restart or ESC to Quit"
+                winner_msg = "Player Wins!"
             else:
-                msg = "AI Wins! Press R to Restart or ESC to Quit"
-            text = overlay_font.render(msg, True, WHITE)
-            rect = text.get_rect(center=(self.width // 2, self.height // 2))
-            s = pygame.Surface((rect.width + 20, rect.height + 20))
-            s.set_alpha(160)
-            s.fill((0, 0, 0))
-            screen.blit(s, (rect.x - 10, rect.y - 10))
-            screen.blit(text, rect)
+                winner_msg = "AI Wins!"
+            
+            if self.awaiting_replay_choice:
+                msg = winner_msg
+                options_msg = "Choose Match Format:"
+                option_lines = [
+                    "Press 3 - First to 3 Points",
+                    "Press 5 - First to 5 Points",
+                    "Press 7 - First to 7 Points",
+                    "Press ESC to Exit"
+                ]
+                
+                # Render winner message
+                text = overlay_font.render(msg, True, WHITE)
+                rect = text.get_rect(center=(self.width // 2, self.height // 2 - 80))
+                
+                # Render options
+                options_text = small_font.render(options_msg, True, WHITE)
+                options_rect = options_text.get_rect(center=(self.width // 2, self.height // 2 - 20))
+                
+                # Calculate background size
+                max_width = max(rect.width, options_rect.width, 400)
+                total_height = rect.height + options_rect.height + len(option_lines) * 30 + 60
+                
+                # Draw semi-transparent background
+                s = pygame.Surface((max_width + 40, total_height))
+                s.set_alpha(180)
+                s.fill((0, 0, 0))
+                screen.blit(s, (self.width // 2 - max_width // 2 - 20, rect.y - 20))
+                
+                # Draw all text
+                screen.blit(text, rect)
+                screen.blit(options_text, options_rect)
+                
+                y_offset = options_rect.bottom + 15
+                for line in option_lines:
+                    line_text = small_font.render(line, True, WHITE)
+                    line_rect = line_text.get_rect(center=(self.width // 2, y_offset))
+                    screen.blit(line_text, line_rect)
+                    y_offset += 30
+            else:
+                msg = winner_msg + " Press R to Restart or ESC to Quit"
+                text = overlay_font.render(msg, True, WHITE)
+                rect = text.get_rect(center=(self.width // 2, self.height // 2))
+                s = pygame.Surface((rect.width + 20, rect.height + 20))
+                s.set_alpha(160)
+                s.fill((0, 0, 0))
+                screen.blit(s, (rect.x - 10, rect.y - 10))
+                screen.blit(text, rect)
 
     def reset_match(self):
         """Reset scores and ball to start a new match."""
         self.player_score = 0
         self.ai_score = 0
         self.game_over = False
+        self.awaiting_replay_choice = False
         self.ball.reset(direction=random.choice([-1.0, 1.0]))
+    
+    def start_new_match(self, best_of: int):
+        """Start a new match with specified format (best of N)."""
+        self.winning_score = best_of  # Direct points to win (3, 5, or 7)
+        self.reset_match()
