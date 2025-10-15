@@ -26,7 +26,7 @@ def make_beep(freq=440, duration_ms=100, volume=0.2):
     return sound
 
 class GameEngine:
-    def __init__(self, width: int, height: int, winning_score: int = 3):
+    def __init__(self, width: int, height: int, winning_score: int = 5):
         self.width = width
         self.height = height
         self.paddle_width = 10
@@ -152,9 +152,9 @@ class GameEngine:
                 msg = winner_msg
                 options_msg = "Choose Match Format:"
                 option_lines = [
-                    "Press 3 - First to 3 Points",
-                    "Press 5 - First to 5 Points",
-                    "Press 7 - First to 7 Points",
+                    "Press 3 for Best of 3",
+                    "Press 5 for Best of 5",
+                    "Press 7 for Best of 7",
                     "Press ESC to Exit"
                 ]
                 
@@ -206,5 +206,5 @@ class GameEngine:
     
     def start_new_match(self, best_of: int):
         """Start a new match with specified format (best of N)."""
-        self.winning_score = best_of  # Direct points to win (3, 5, or 7)
+        self.winning_score = (best_of + 1) // 2  # Best of 3 = 2 wins, Best of 5 = 3 wins, Best of 7 = 4 wins
         self.reset_match()
